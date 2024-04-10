@@ -13,3 +13,5 @@
 ## Links
 
 - The css styles used to beautify the html: https://gist.github.com/RalfG/aaa0e2b5cf95302140dcd4b158828407
+
+- Save html: https://htmtopdf.herokuapp.com/ipynbviewer/
