@@ -1,6 +1,9 @@
-weights/
-chest_xray_64/
+Assignment1/weights/
+Assignment1/chest_xray_64/
 Assignment2/flickr8k/
+Assignment2/checkpoints/
+Assignment2/logs/
+Assignment2/submission.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
