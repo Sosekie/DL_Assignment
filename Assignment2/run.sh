@@ -6,3 +6,6 @@ python train.py --device-id=0 --config-file-path=./configs/config_model_2.yaml \
 
 python train.py --device-id=0 --config-file-path=./configs/config_model_3.yaml \
 --experiment-name=model_3 --num-epochs=100
+
+python train.py --device-id=0 --config-file-path=./configs/config_model_4.yaml \
+--experiment-name=model_4 --num-epochs=100

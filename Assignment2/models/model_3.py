@@ -82,10 +82,6 @@ class CaptionGenerator(BaseCaptionGenerator):
         self.embedding = torch.nn.Sequential(torch.nn.Embedding(num_embeddings=self.vocabulary_size,
                                                                 embedding_dim=self.embedding_dim),
                                              torch.nn.Dropout(0.5))
-
-        # self.rnn = torch.nn.RNN(input_size=self.embedding_dim, hidden_size=self.hidden_dim,
-        #                         num_layers=self.num_layers, nonlinearity='tanh', bias=True,
-        #                         batch_first=True)
         
         self.lstm = torch.nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim,
                          num_layers=self.num_layers, bias=True, batch_first=True)

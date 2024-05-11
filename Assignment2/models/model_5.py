@@ -1,61 +1,111 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.models
+from typing import Tuple
+
+from einops import rearrange, pack, repeat
+
 from models.base import BaseModel, BaseImageEncoder, BaseCaptionGenerator
 
 
 class Model(BaseModel):
-    """Base class for all models."""
-    def __init__(self, vocabulary):
+    def __init__(self, vocabulary, embedding_dim, num_layers):
         super().__init__(vocabulary=vocabulary)
 
+        self.embedding_dim = embedding_dim
+        self.num_layers = num_layers
+        self.backbone = DINOv2Backbone()
 
-class ImageEncoder(BaseImageEncoder):
+        self.image_encoder = ImageEncoder(backbone=self.backbone, embedding_dim=self.embedding_dim)
+        self.caption_generator = CaptionGenerator(vocabulary_size=len(self.vocabulary),
+                                                  embedding_dim=self.embedding_dim,
+                                                  num_layers=self.num_layers)
+
+
+class DINOv2Backbone(nn.Module):
     def __init__(self):
+        super(DINOv2Backbone, self).__init__()
+        
+        self.dino = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        self.embed_dim = self.dino.embed_dim
+    
+    def forward(self, x: torch.Tensor, scale: int = 1) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        :param x: [b c h w]
+        """
+
+        x = F.interpolate(x, size=(scale * 224, scale * 224), mode="bilinear", align_corners=False)
+        out = self.dino.get_intermediate_layers(x, n=1, reshape=True, return_class_token=True)[0]
+
+        return out[1], out[0]
+    
+
+class ImageEncoder(nn.Module):
+    def __init__(self, backbone: nn.Module, embedding_dim: int):
         super().__init__()
 
+        self.backbone = backbone
+        self.out = nn.Sequential(
+            nn.LayerNorm(self.backbone.embed_dim),
+            nn.Linear(self.backbone.embed_dim, embedding_dim)
+        )
+
     def freeze(self):
-        """Sets the requires_grad parameter to False for some model parameters."""
-        raise NotImplementedError
+        for param in self.backbone.parameters():
+            param.requires_grad = False
 
     def forward(self, image):
-        """Forward method.
-
-        :param image: torch.tensor of the shape [batch_size, channels, height, width]
-
-        :return: encoded image (torch.tensor) of the shape [batch_size, *]
-        """
-        raise NotImplementedError
+        feats = self.backbone(image)
+        out = self.out(feats[0]) 
+        return out
 
 
 class CaptionGenerator(BaseCaptionGenerator):
-    def __init__(self, vocabulary_size):
-        super().__init__()
+    def __init__(self, vocabulary_size, embedding_dim, num_layers):
+        super().__init__(vocabulary_size=vocabulary_size)
+        self.embedding_dim = embedding_dim
+        self.num_layers = num_layers
 
-        self.vocabulary_size = vocabulary_size
+        self.embedding = nn.Embedding(num_embeddings=self.vocabulary_size, embedding_dim=self.embedding_dim)
+        self.positional_encoding = nn.Parameter(torch.zeros(1, 500, embedding_dim))  # Assuming max sequence length 500
+        self.transformer = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=embedding_dim, nhead=8), num_layers=num_layers)
+        self.to_logits = nn.Linear(in_features=self.embedding_dim, out_features=self.vocabulary_size)
 
     def freeze(self):
-        """Sets the requires_grad parameter to False for some model parameters."""
-        raise NotImplementedError
+        pass
 
-    def forward(self, encoded_image, caption_indices, *args):
-        """Forward method.
+    def _get_embeddings(self, encoded_image=None, caption_indices=None):
+        if caption_indices is None:
+            embeddings = rearrange(encoded_image, 'batch embedding_dim -> batch 1 embedding_dim')
+        else:
+            embeddings = self.embedding(caption_indices)
+            if encoded_image is not None:
+                embeddings, _ = pack([encoded_image, embeddings], 'batch * embedding_dim')
 
-        :param encoded_image: torch.tensor of the shape [batch_size, *] or None
-        :param caption_indices: torch.tensor of the shape [batch_size, sequence_length] or None
-        :param args: e.g., hidden state
+        return embeddings
 
-        :return: output dict at least with 'logits' and 'indices' keys,
-            where: logits is the torch.tensor of the shape [batch_size, vocabulary_size, sequence_length]
-                   indices is the torch.tensor of the shape [batch_size, sequence_length]
-        """
-        raise NotImplementedError
-
+    def forward(self, encoded_image, caption_indices):
+        image_embedding = repeat(encoded_image, 'batch embedding_dim -> batch 1 embedding_dim')
+        text_embeddings = self.embedding(caption_indices)
+        embeddings = torch.cat([image_embedding, text_embeddings], dim=1) + self.positional_encoding[:, :text_embeddings.size(1)+1]
+        transformer_output = self.transformer(embeddings)
+        logits = self.to_logits(transformer_output)
+        return logits
+    
     def generate_caption_indices(self, encoded_image, sos_token_index, eos_token_index, max_length):
-        """Generates caption indices like torch.tensor([1, 23, 5, 8, 2]).
+        caption_indices = []
 
-        :param encoded_image: torch.tensor of the shape [1, *]
-        :param sos_token_index: index of the "start of sequence" token (int)
-        :param eos_token_index: index of the "end of sequence" token (int)
-        :param max_length: maximum caption length (int)
+        output = self.forward(encoded_image, caption_indices=None, hidden_state=None)
+        for _ in range(max_length):
+            predicted_index = output['indices']
 
-        :return: caption indices (list of the length <= max_length)
-        """
-        raise NotImplementedError
+            caption_indices.append(predicted_index.item())
+            if predicted_index.item() == eos_token_index:
+                break
+
+            output = self.forward(encoded_image=None,
+                                  caption_indices=predicted_index,
+                                  hidden_state=output['hidden_state'])
+
+        return caption_indices
