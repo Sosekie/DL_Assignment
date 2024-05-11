@@ -83,9 +83,13 @@ class CaptionGenerator(BaseCaptionGenerator):
                                                                 embedding_dim=self.embedding_dim),
                                              torch.nn.Dropout(0.5))
 
-        self.rnn = torch.nn.RNN(input_size=self.embedding_dim, hidden_size=self.hidden_dim,
-                                num_layers=self.num_layers, nonlinearity='tanh', bias=True,
-                                batch_first=True)
+        # self.rnn = torch.nn.RNN(input_size=self.embedding_dim, hidden_size=self.hidden_dim,
+        #                         num_layers=self.num_layers, nonlinearity='tanh', bias=True,
+        #                         batch_first=True)
+        
+        self.lstm = torch.nn.LSTM(input_size=self.embedding_dim, hidden_size=self.hidden_dim,
+                         num_layers=self.num_layers, bias=True, batch_first=True)
+        
         self.to_logits = torch.nn.Linear(in_features=self.hidden_dim, out_features=self.vocabulary_size)
 
     def freeze(self):
@@ -107,7 +111,7 @@ class CaptionGenerator(BaseCaptionGenerator):
 
         embeddings = self._get_embeddings(encoded_image=encoded_image, caption_indices=caption_indices)
 
-        output, hidden_state = self.rnn(input=embeddings, hx=hidden_state)
+        output, hidden_state = self.lstm(input=embeddings, hx=hidden_state)
         logits = self.to_logits(output)
         logits = rearrange(logits, 'batch sequence_length vocabulary_size -> batch vocabulary_size sequence_length')
 
