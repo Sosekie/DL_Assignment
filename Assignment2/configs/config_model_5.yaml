@@ -1,8 +1,8 @@
 model:
   name: model_5
   parameters:
-    embedding_dim: 128
-    num_layers: 1
+    embedding_dim: 512
+    num_layers: 6
 
 optimizer:
   lr: 1.0e-4

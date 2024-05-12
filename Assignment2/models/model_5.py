@@ -21,7 +21,7 @@ class Model(BaseModel):
         self.image_encoder = ImageEncoder(backbone=self.backbone, embedding_dim=self.embedding_dim)
         self.caption_generator = CaptionGenerator(vocabulary_size=len(self.vocabulary),
                                                   embedding_dim=self.embedding_dim,
-                                                  num_heads=8,
+                                                  num_heads=16,
                                                   num_layers=self.num_layers)
 
 
@@ -97,10 +97,12 @@ class CaptionGenerator(nn.Module):
         return pe
 
     def _get_embeddings(self, encoded_image=None, caption_indices=None):
-        embeddings = self.embedding(caption_indices)
-        embeddings = embeddings + self.positional_encoding[:embeddings.size(1)].to(embeddings.device)
-        encoded_image = rearrange(encoded_image, 'batch embedding_dim -> batch 1 embedding_dim')
-        embeddings = torch.cat([encoded_image, embeddings], dim=1)
+        if caption_indices is None:
+            embeddings = rearrange(encoded_image, 'batch embedding_dim -> batch 1 embedding_dim')
+        else:
+            embeddings = self.embedding(caption_indices)
+            if encoded_image is not None:
+                embeddings, _ = pack([encoded_image, embeddings], 'batch * embedding_dim')
 
         return embeddings
 
@@ -109,8 +111,10 @@ class CaptionGenerator(nn.Module):
             caption_indices = caption_indices[:, 1:]  # the encoded image will be used instead of the <SOS> token
 
         embeddings = self._get_embeddings(encoded_image=encoded_image, caption_indices=caption_indices)
-        
+
+        print('embeddings.size():', embeddings.size())
         output = self.transformer_encoder(embeddings)
+        print('output.size():', output.size())
         logits = self.to_logits(output)
         logits = rearrange(logits, 'batch sequence_length vocabulary_size -> batch vocabulary_size sequence_length')
 
@@ -119,13 +123,15 @@ class CaptionGenerator(nn.Module):
     def generate_caption_indices(self, encoded_image, sos_token_index, eos_token_index, max_length):
         caption_indices = [sos_token_index]
 
+        output = self.forward(encoded_image, caption_indices=torch.tensor([caption_indices], dtype=torch.long, device=encoded_image.device))
         for _ in range(max_length):
-            current_indices = torch.tensor([caption_indices], dtype=torch.long, device=encoded_image.device)
-            output = self.forward(encoded_image, current_indices)
             predicted_index = output['indices'][0, -1].item()  # get the last predicted index
-
             caption_indices.append(predicted_index)
             if predicted_index == eos_token_index:
                 break
+
+            current_indices = torch.tensor([caption_indices], dtype=torch.long, device=encoded_image.device)
+            output = self.forward(encoded_image=None,
+                                  caption_indices=current_indices)
 
         return caption_indices

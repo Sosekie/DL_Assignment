@@ -106,6 +106,7 @@ class CaptionGenerator(BaseCaptionGenerator):
             caption_indices = caption_indices[:, 1:]  # the encoded image will be used instead of the <SOS> token
 
         embeddings = self._get_embeddings(encoded_image=encoded_image, caption_indices=caption_indices)
+        print(embeddings.size())
 
         output, hidden_state = self.rnn(input=embeddings, hx=hidden_state)
         logits = self.to_logits(output)
