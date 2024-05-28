@@ -5,8 +5,8 @@ from einops import rearrange, pack
 from models.base import BaseModel, BaseImageEncoder, BaseCaptionGenerator
 
 if_print = False
-position_encoding = True
-attention_map_visualize = True
+position_encoding = False
+attention_map_visualize = False
 
 class Model(BaseModel):
     def __init__(self, vocabulary, embedding_dim, num_layers):
@@ -152,9 +152,9 @@ class CaptionGenerator(BaseCaptionGenerator):
         # expects input of shape (sequence_length, batch_size, embedding_dim)
         embeddings = rearrange(embeddings, 'batch seq_len embedding_dim -> seq_len batch embedding_dim')
 
+        seq_len, batch_size, _ = embeddings.size()
         if position_encoding:
             # add positional encoding to embeddings
-            seq_len, batch_size, _ = embeddings.size()
             pos_encoding = self.positional_encoding_caption[:, :seq_len, :].expand(batch_size, -1, -1)
             pos_encoding = rearrange(pos_encoding, 'batch seq_len embedding_dim -> seq_len batch embedding_dim')
             embeddings += pos_encoding
@@ -179,7 +179,6 @@ class CaptionGenerator(BaseCaptionGenerator):
 
         if attention_map_visualize:
             attention_weights = self.transformer_decoder_layer.self_attn(embeddings, embeddings, embeddings)[1]
-            print('attention_weights size: ', attention_weights.size())
         
         # convert back to shape (batch_size, sequence_length, embedding_dim)
         output = rearrange(output, 'seq_len batch embedding_dim -> batch seq_len embedding_dim')
