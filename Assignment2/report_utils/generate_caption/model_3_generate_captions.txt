@@ -1,0 +1,6 @@
+image,caption
+boat.png,a person is standing on a snowy hill
+bus.png,two men are standing on a street
+child.jpg,a little boy is playing with a small girl in a blue shirt
+dog.jpg,a dog is running through the grass
+horse.png,a man and a woman are walking down a snowy hill

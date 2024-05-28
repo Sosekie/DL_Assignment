@@ -1,0 +1,6 @@
+image,caption
+boat.png,a person is standing on a dirt path
+bus.png,a dog is jumping over a large wave
+child.jpg,a dog is jumping over a large wave
+dog.jpg,a person is jumping over a large wave
+horse.png,a person in a blue shirt is running through the water

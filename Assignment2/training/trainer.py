@@ -3,6 +3,7 @@ import torch
 from metric import BLEUScore
 from tqdm import tqdm
 
+if_print = False
 
 class Trainer(object):
     def __init__(self, model, optimizer, checkpointer, logger, device, last_epoch):
@@ -38,6 +39,11 @@ class Trainer(object):
             for item in wrapped_iterator:
                 image = item['image'].to(self.device)
                 caption_indices = item['caption_indices'].to(self.device)
+                
+                if if_print:
+                    print()
+                    print('image size: ', image.size())
+                    print('caption_indices size: ', caption_indices.size())
 
                 output = self.model(image, caption_indices[:, :-1])
                 objective = self.objective_function(output['logits'], caption_indices[:, 1:])

@@ -1,0 +1,6 @@
+image,caption
+boat.png,a person is sitting on the water
+bus.png,a man and a woman walking down a street
+child.jpg,a little girl in a red shirt is playing with a red ball
+dog.jpg,a dog is standing on the beach
+horse.png,a man is walking on a rocky path

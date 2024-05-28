@@ -1,0 +1,6 @@
+image,caption
+boat.png,a white bird is standing on a beach
+bus.png,a man in a red shirt is riding a bike
+child.jpg,a little boy in a red shirt is running through the grass
+dog.jpg,a dog is running through the grass
+horse.png,a man in a red shirt is standing on a bench

@@ -95,7 +95,7 @@ class CaptionGenerator(BaseCaptionGenerator):
         pass
 
     def _get_embeddings(self, encoded_image=None, caption_indices=None):
-        # Ok, now we do not need to justify whether the first token is from image or text
+        # now we do not need to justify whether the first token is from image or text
         # Since it is a combination of both image and text(maybe sos_token)
         text_embeddings  = self.embedding(caption_indices)
         image_embeddings = repeat(encoded_image, 'batch embedding_dim -> batch seq_len embedding_dim', seq_len=text_embeddings.shape[1])

@@ -1,0 +1,6 @@
+The difference between TransformerEncoderLayer and TransformerDecoderLayer in PyTorch is the presence of cross-attention to some source tokens in the TransformerDecoderLayer class.In Model 5 your conditioning is still just the single CLS token, cross-attending to which will result into simply adding it to the tokens after the self-attention block.It may work fine, but has some redundant built-in operations.So instead it may be better to use the TrasformerEncoderLayer class and think of a different conditioning scheme.You may use the TransformerDecoderLayer in model 6 though, but it may be a bit tricky to extract the cross-attention maps for visualization after the model is trained.So keep that in mind when implementing the model.
+
+
+Submit best model and config
+
+You can generate captions using all models and create files like generated_captions.txt in the report_utils folder.Then you can use pandas to read such files.You can also save attention maps as images or .npy files and then open them in the notebook.So, this is why we ask you to submit the report_utils folder because there you can store everything you need to run your notebook.
