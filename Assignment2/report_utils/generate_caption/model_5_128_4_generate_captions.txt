@@ -1,6 +1,0 @@
-image,caption
-boat.png,a boat is standing on a dock in the water
-bus.png,a man in a blue jacket is walking down a street
-child.jpg,a little boy in a red shirt and white shirt is playing with a toy in the grass
-dog.jpg,a dog stands in the sand
-horse.png,a man in a red jacket is walking along a rocky shore

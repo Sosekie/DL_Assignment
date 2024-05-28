@@ -1,0 +1,6 @@
+image,caption
+boat.png,a man is sailing on the water
+bus.png,a group of people are standing on a street
+child.jpg,a boy in a blue shirt and white shirt is standing in front of a green grass
+dog.jpg,a dog walks on the beach
+horse.png,a man in a yellow shirt and a white hat is riding a horse

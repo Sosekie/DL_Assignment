@@ -6,7 +6,8 @@ from models.base import BaseModel, BaseImageEncoder, BaseCaptionGenerator
 
 if_print = False
 position_encoding = False
-attention_map_visualize = False
+attention_map_visualize = True
+using_cls = False
 
 class Model(BaseModel):
     def __init__(self, vocabulary, embedding_dim, num_layers):
@@ -135,10 +136,13 @@ class CaptionGenerator(BaseCaptionGenerator):
     def forward(self, encoded_image, caption_indices, hidden_state=None):
         patch_token, cls_token = encoded_image
 
+        if not using_cls:
+            cls_token = None
+
         if caption_indices is not None and if_print:
             print('caption_indices size: ', caption_indices.size())
 
-        if patch_token is not None and caption_indices is not None:
+        if cls_token is not None and caption_indices is not None:
             caption_indices = caption_indices[:, 1:]  # the encoded image will be used instead of the <SOS> token
         
         if caption_indices is not None and if_print:
